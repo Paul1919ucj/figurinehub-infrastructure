@@ -23,6 +23,29 @@ pipeline {
             }
         }
 
+        stage('Push Docker Images to GHCR') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-ghcr',
+                    usernameVariable: 'GHCR_USER',
+                    passwordVariable: 'GHCR_TOKEN'
+                )]) {
+                    sh '''
+                        set +x
+                        echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+                        docker tag figurinehub-frontend:latest ghcr.io/paul1919ucj/figurinehub-frontend:latest
+                        docker tag figurinehub-backend:latest ghcr.io/paul1919ucj/figurinehub-backend:latest
+
+                        docker push ghcr.io/paul1919ucj/figurinehub-frontend:latest
+                        docker push ghcr.io/paul1919ucj/figurinehub-backend:latest
+
+                        docker logout ghcr.io
+                    '''
+                }
+            }
+        }
+
         stage('Verify Images') {
             steps {
                 sh 'docker image inspect figurinehub-frontend:latest'
