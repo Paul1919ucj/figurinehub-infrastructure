@@ -23,18 +23,15 @@ pipeline {
             }
         }
     stage('Backend Tests') {
-        steps {
-            sh '''
-                docker run --rm \
-                -v "$WORKSPACE/backend:/app" \
-                -v "$WORKSPACE/frontend:/frontend:ro" \
-                -w /app \
-                python:3.12-slim \
-                sh -c "pip install --no-cache-dir -r requirements.txt && python -m unittest discover -s . -p 'test_*.py' -v"
-            '''
+    steps {
+        sh '''
+            docker build -t figurinehub-backend-tests \
+              -f backend/Dockerfile.test .
+            docker run --rm figurinehub-backend-tests
+        '''
+            }
         }
-        }
-        
+
         stage('Build Docker Images') {
             steps {
                 sh '''
