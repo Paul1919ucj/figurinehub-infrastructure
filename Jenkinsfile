@@ -181,15 +181,25 @@ if ! sudo docker exec "$PROXY" nginx -s reload; then
     exit 1
 fi
 
-sleep 3
+# Monitorizare timp de 10 minute după comutarea Blue/Green
+echo "Monitorizare PROD timp de 10 minute..."
 
-# Verificăm noua rutare prin proxy.
-if ! curl -fsS http://127.0.0.1/health; then
-    cp "$CONF.rollback" "$CONF"
-    sudo docker exec "$PROXY" nginx -s reload || true
-    echo "ROLLBACK EXECUTAT."
-    exit 1
-fi
+for i in $(seq 1 60); do
+    if ! curl -fsS --max-time 5 http://127.0.0.1/health > /dev/null; then
+        echo "Health check FAILED! Executam rollback..."
+
+        cp "$CONF.rollback" "$CONF"
+        sudo docker exec "$PROXY" nginx -s reload || true
+
+        echo "ROLLBACK EXECUTAT."
+        exit 1
+    fi
+
+    echo "Health check $i/60 OK"
+    sleep 10
+done
+
+echo "Monitorizare finalizata cu SUCCESS."
 
 # Salvăm tagul numai după deployment reușit.
 if [ "$TARGET" = "blue" ]; then

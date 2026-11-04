@@ -1,0 +1,60 @@
+services:
+  backend-blue:
+    image: ghcr.io/paul1919ucj/figurinehub-backend:${BLUE_TAG:-latest}
+    environment:
+      DB_HOST: database
+      DB_NAME: figurines
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+    networks:
+      - figurinehub
+    restart: unless-stopped
+
+  frontend-blue:
+    image: ghcr.io/paul1919ucj/figurinehub-frontend:${BLUE_TAG:-latest}
+    volumes:
+      - ./nginx-blue.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-blue
+    networks:
+      - figurinehub
+    restart: unless-stopped
+
+  backend-green:
+    image: ghcr.io/paul1919ucj/figurinehub-backend:${GREEN_TAG:-latest}
+    environment:
+      DB_HOST: database
+      DB_NAME: figurines
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}
+    networks:
+      - figurinehub
+    restart: unless-stopped
+
+  frontend-green:
+    image: ghcr.io/paul1919ucj/figurinehub-frontend:${GREEN_TAG:-latest}
+    volumes:
+      - ./nginx-green.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend-green
+    networks:
+      - figurinehub
+    restart: unless-stopped
+
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend-blue
+      - frontend-green
+    networks:
+      - figurinehub
+    restart: unless-stopped
+
+networks:
+  figurinehub:
+    external: true
+    name: figurinehub_default
