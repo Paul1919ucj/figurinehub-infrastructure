@@ -2,27 +2,42 @@ pipeline {
     agent any
 
     stages {
-        stage('Verify Jenkins') {
+        stage('Checkout Repositories') {
             steps {
-                echo 'Jenkins pipeline started successfully!'
-                echo 'Project: FigurineHub'
+                dir('frontend') {
+                    git branch: 'main',
+                        url: 'https://github.com/Paul1919ucj/figurinehub-frontend.git'
+                }
+
+                dir('backend') {
+                    git branch: 'main',
+                        url: 'https://github.com/Paul1919ucj/figurinehub-backend.git'
+                }
             }
         }
 
-        stage('Verify Git') {
+        stage('Build Docker Images') {
             steps {
-                sh 'git --version'
+                sh 'docker build -t figurinehub-frontend:latest ./frontend'
+                sh 'docker build -t figurinehub-backend:latest ./backend'
+            }
+        }
+
+        stage('Verify Images') {
+            steps {
+                sh 'docker image inspect figurinehub-frontend:latest'
+                sh 'docker image inspect figurinehub-backend:latest'
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'FigurineHub Docker images built successfully!'
         }
 
         failure {
-            echo 'Pipeline failed!'
+            echo 'FigurineHub pipeline failed!'
         }
     }
 }
